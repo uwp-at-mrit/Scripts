@@ -1,15 +1,8 @@
 #lang racket
 
-(require "tongue.rkt")
+(require "catalogue/tongue.rkt")
 
 (define force-remake (make-parameter #false))
-(define sln-root (make-parameter #false))
-
-(define find-solution-root-dir
-  (lambda [[dir (current-directory)]]
-    (cond [(ormap (curry regexp-match? #px"[.]sln$") (directory-list dir)) dir]
-          [else (let-values ([(parent dirname _) (split-path dir)])
-                  (and parent (find-solution-root-dir parent)))])))
 
 (define resource-exists?
   (lambda [tongue.resw.rkt]
@@ -71,13 +64,11 @@
    #:program "mkresw"
    #:once-each
    [("-f" "--force") "force remake string resources" (force-remake #true)]
-   #:args []
-   (let ([mkresw.rkt (simplify-path (build-path (find-system-path 'orig-dir) (find-system-path 'run-file)))])
-     (parameterize ([sln-root (find-solution-root-dir (path-only mkresw.rkt))])
-       (when (sln-root)
-         (define all-projects (filter directory-exists? (directory-list (sln-root) #:build? #true)))
-         (for ([project-root (in-list all-projects)])
-           (define tongue-root (build-path project-root "stone" "tongue"))
-           (when (directory-exists? tongue-root)
-             (for ([resw (in-list (filter resource-exists? (directory-list tongue-root #:build? #true)))])
-               (make-resws resw tongue-root)))))))))
+   #:args [sln-root]
+   (when (directory-exists? sln-root)
+     (define all-projects (filter directory-exists? (directory-list sln-root #:build? #true)))
+     (for ([project-root (in-list all-projects)])
+       (define tongue-root (build-path project-root "stone" "tongue"))
+       (when (directory-exists? tongue-root)
+         (for ([resw (in-list (filter resource-exists? (directory-list tongue-root #:build? #true)))])
+           (make-resws resw tongue-root)))))))

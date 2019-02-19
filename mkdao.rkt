@@ -1,13 +1,6 @@
 #lang racket
 
 (define force-remake (make-parameter #false))
-(define sln-root (make-parameter #false))
-
-(define find-solution-root-dir
-  (lambda [[dir (current-directory)]]
-    (cond [(ormap (curry regexp-match? #px"[.]sln$") (directory-list dir)) dir]
-          [else (let-values ([(parent dirname _) (split-path dir)])
-                  (and parent (find-solution-root-dir parent)))])))
 
 (define schema-exists?
   (lambda [schema.rkt]
@@ -51,12 +44,10 @@
    #:program "mkdao"
    #:once-each
    [("-f" "--force") "force remake database access objects" (force-remake #true)]
-   #:args []
-   (let ([mkdao.rkt (simplify-path (build-path (find-system-path 'orig-dir) (find-system-path 'run-file)))])
-     (parameterize ([sln-root (find-solution-root-dir (path-only mkdao.rkt))])
-       (when (sln-root)
-         (define all-projects (filter directory-exists? (directory-list (sln-root) #:build? #true)))
-         (for ([project-root (in-list all-projects)])
-           (define schema-root (build-path project-root "schema"))
-           (when (directory-exists? schema-root)
-             (for-each make-daos (filter schema-exists? (directory-list schema-root #:build? #true))))))))))
+   #:args [sln-root]
+   (when (directory-exists? sln-root)
+     (define all-projects (filter directory-exists? (directory-list sln-root #:build? #true)))
+     (for ([project-root (in-list all-projects)])
+       (define schema-root (build-path project-root "schema"))
+       (when (directory-exists? schema-root)
+         (for-each make-daos (filter schema-exists? (directory-list schema-root #:build? #true))))))))

@@ -1,6 +1,6 @@
 #lang racket
 
-(require "Handbook/env.rkt")
+(require "env.rkt")
 
 (require compiler/cm)
 
