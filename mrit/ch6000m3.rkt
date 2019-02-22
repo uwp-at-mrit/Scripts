@@ -2,10 +2,26 @@
 
 (require "message.rkt")
 (require "../catalogue/tongue.rkt")
-(require "../../ch6000m3/stone/tongue/alarm.resw.rkt")
+(require "../../CH6000m3/SCADA/stone/tongue/alarm.resw.rkt")
 
 (require racket/tcp)
+(require racket/generator)
+
 (require syntax/location)
+
+(define ch6000m3.plc
+  (with-handlers ([exn? (λ [e] null)])
+    (call-with-input-file (path-replace-extension (build-path (find-system-path 'orig-dir) (find-system-path 'run-file)) #".plc")
+      (λ [/dev/plcin]
+        (let port->plc ([sclp null])
+          (define timepoint (read /dev/plcin))
+          (cond [(eof-object? timepoint) (reverse sclp)]
+                [else (let ([addr0 (read /dev/plcin)]
+                            [addrn (read /dev/plcin)])
+                        (read-line /dev/plcin)
+                        (port->plc (let ([plc (read-bytes (add1 (- addrn addr0)) /dev/plcin)])
+                                     (read-line /dev/plcin)
+                                     (cons plc sclp))))]))))))
 
 (define memory (make-bytes #x1264))
 (define master-ipv4 (vector-ref (current-command-line-arguments) 0))
@@ -34,18 +50,22 @@
                               (bitwise-not (arithmetic-shift #x1 bindex))))]))
 
 (define refresh-memory
+  (let ([plc (sequence->repeated-generator ch6000m3.plc)])
   (lambda [alarms4 alarms205]
-    (bytes-fill! memory 0)
+    (cond [(null? ch6000m3.plc) (bytes-fill! memory 0)]
+          [else (bytes-copy! memory 0 (plc) 0 (bytes-length memory))])
 
     ;;; DB2
-    (for ([i (in-range 1 176)]) ;; don't change the tidemark
-      (real->floating-point-bytes (+ 2.0 (random)) 4 #true memory (+ 3418 (* i 4))))
+    (when (null? ch6000m3.plc)
+      (for ([i (in-range 1 176)]) ;; don't change the tidemark
+        (real->floating-point-bytes (+ 2.0 (random)) 4 #true memory (+ 3418 (* i 4)))))
     
     ;;; DB4
-    (for ([i (in-range 124)])
-      (unless (< 40 i 50) ;; winches and gantries
-        (define state (arithmetic-shift #x1 (random 8)))
-        (bytes-set! memory (+ db4 i) state)))
+    (when (null? ch6000m3.plc)
+      (for ([i (in-range 124)])
+        (unless (< 40 i 50) ;; winches and gantries
+          (define state (arithmetic-shift #x1 (random 8)))
+          (bytes-set! memory (+ db4 i) state))))
 
     ;; gantries
     (set-digital-input db4 42 4)
@@ -58,8 +78,9 @@
     ;(set-digital-input db4 (add1 (car alarms4)))
     
     ;;; DB203
-    (for ([i (in-range 280)])
-      (real->floating-point-bytes (+ 203.0 (random)) 4 #true memory (+ 1120 (* i 4))))
+    (when (null? ch6000m3.plc)
+      (for ([i (in-range 280)])
+        (real->floating-point-bytes (+ 203.0 (random)) 4 #true memory (+ 1120 (* i 4)))))
 
     ;;; DB205
     ;; gantries, ps trunnion - sb draghead
@@ -74,7 +95,7 @@
     
     ;; alarms
     (for ([idx (in-list alarms205)])
-      (clear-digital-input db205 (add1 idx)))))
+      (clear-digital-input db205 (add1 idx))))))
 
 (define-values (alarms4 alarms205)
   (let-values ([(classname data) (alarm-tongues)])
