@@ -1,0 +1,3 @@
+[submodule "peerfs"]
+	path = peerfs
+	url = github.com:wargrey/peerfs.git
