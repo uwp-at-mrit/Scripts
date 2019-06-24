@@ -5,6 +5,9 @@
 
 (date-display-format 'iso-8601)
 
+(define server (vector-ref (current-command-line-arguments) 0))
+(define port (string->number (vector-ref (current-command-line-arguments) 1)))
+
 (define make-message
   (lambda [msg]
     (define now (seconds->date (* (current-inexact-milliseconds) 0.001)))
@@ -18,7 +21,7 @@
       (parameterize ([current-custodian (make-custodian)])
         (dynamic-wind
          (thunk (void))
-         (thunk (let-values ([(/dev/tcpin /dev/mbout) (tcp-connect/enable-break "172.16.8.222" 502)])
+         (thunk (let-values ([(/dev/tcpin /dev/mbout) (tcp-connect/enable-break server port)])
                   (let ([now (seconds->date (* (current-inexact-milliseconds) 0.001))])
                     (define greetings (make-message (format "Hello, I am Racket! 我替代了例子中的客户端(~a)。" 'github:microsoft/windows-universal-samples.git)))
                     (write-bytes (integer->integer-bytes (random #xFFFF) 2 #false #true) /dev/mbout)
@@ -28,7 +31,10 @@
                     (write-byte #x05 /dev/mbout)
                     (write-string greetings /dev/mbout)
                     (flush-output /dev/mbout)
-                    (displayln greetings))))
+                    (displayln greetings)
+
+                    (for ([line (in-port read-line /dev/tcpin)])
+                      (displayln line)))))
          (thunk (custodian-shutdown-all (current-custodian))))))
     
     (sleep 1)
