@@ -8,8 +8,8 @@
               "$GPHDT,343.515,T*30")
         "$GPGGA,092911.20,2228.52736105,N,11352.02437292,E,2,08,1.1,30.779,M,-2.801,M,5.2,0129*6C"
         (list "$GPVTG,343.22,T,,M,5.89,N,10.91,K,D*01"
-              "$GPHDT,343.508,T*3C")
-        "$GPGGA,092911.40,2228.52767535,N,11352.02427511,E,2,08,1.1,30.777,M,-2.801,M,5.4,0129*6C"
+              "$GPHDT,343.508,T*3C"
+              "!GPGGA,092911.40,2228.52767535,N,11352.02427511,E,2,08,1.1,30.777,M,-2.801,M,5.4,0129*6C")
         (list "$GPVTG,343.75,T,,M,5.87,N,10.87,K,D*0A"
               "$GPHDT,343.508,T*3C")
         "$GPGGA,092911.60,2228.52798684,N,11352.02417394,E,2,08,1.1,30.768,M,-2.801,M,5.6,0129*63"
@@ -43,11 +43,12 @@
 
                 (for ([batch (in-list nmeas)])
                   (for ([nmea (if (list? batch) (in-list batch) (in-value batch))])
+                    (printf "[~a bytes] ~a~n" (+ (string-length nmea) 2) nmea)
                     (fprintf /dev/tcpout nmea)
                     (write-char #\return /dev/tcpout)
                     (write-char #\linefeed /dev/tcpout))
                   (flush-output /dev/tcpout)
-                  (sleep 0.2))))
+                  (sleep 0.5))))
        (thunk (custodian-shutdown-all (current-custodian))))))
   (sleep 1)
   (server))
