@@ -15,11 +15,11 @@
   (for ([src.cpp (in-directory cpp-root)] #:when (regexp-match? #px"[.]cpp$" src.cpp))
     (define maybe-ok (with-handlers ([exn? values]) (bytes->string/utf-8 (file->bytes src.cpp))))
     (cond [(not (exn? maybe-ok)) (printf "[Skipped]~a~n" src.cpp)]
-          [else (with-handlers ([exn? (λ [e] (fprintf (current-error-port) "[Failed]~a: ~a~n" (exn-message e)))])
+          [else (with-handlers ([exn? (λ [e] (fprintf (current-error-port) "[Failed]~a: ~a~n" src.cpp (exn-message e)))])
                   (gbk->utf8 src.cpp))]))
 
   (for ([src.h (in-directory cpp-root)] #:when (regexp-match? #px"[.]h$" src.h))
     (define maybe-ok (with-handlers ([exn? values]) (bytes->string/utf-8 (file->bytes src.h))))
     (cond [(not (exn? maybe-ok)) (printf "[Skipped]~a~n" src.h)]
-          [else (with-handlers ([exn? (λ [e] (fprintf (current-error-port) "[Failed]~a: ~a~n" (exn-message e)))])
+          [else (with-handlers ([exn? (λ [e] (fprintf (current-error-port) "[Failed]~a: ~a~n" src.h (exn-message e)))])
                   (gbk->utf8 src.h))])))

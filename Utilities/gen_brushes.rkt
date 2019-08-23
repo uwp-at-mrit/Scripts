@@ -195,9 +195,19 @@
                            "}~n~n")
             (cadr color) (caddr color) (cadddr color) (last color))))
 
+(define println-index-syntax
+  (lambda [idx color]
+    (printf "case ~a: color = Colours::~a; break;~n"
+            idx (cadr color))))
+
 (module+ main
   (define unique-colors (remove-duplicates named-colors bytes=? #:key cadr))
   
   (for-each println-define-syntax unique-colors)
   (newline)
-  (for-each println-implement-syntax unique-colors))
+  (for-each println-implement-syntax unique-colors)
+  (newline)
+  (for ([c (in-list unique-colors)]
+        [n (in-naturals)])
+    (println-index-syntax n c))
+  (printf "total colors: ~a~n" (length unique-colors)))

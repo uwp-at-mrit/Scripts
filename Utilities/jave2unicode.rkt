@@ -15,5 +15,5 @@
   (for ([src.java (in-directory java-root)] #:when (regexp-match? #px"[.]java$" src.java))
     (define maybe-ok (with-handlers ([exn? values]) (bytes->string/utf-8 (file->bytes src.java))))
     (cond [(not (exn? maybe-ok)) (printf "[Skipped]~a~n" src.java)]
-          [else (with-handlers ([exn? (λ [e] (fprintf (current-error-port) "[Failed]~a: ~a~n" (exn-message e)))])
+          [else (with-handlers ([exn? (λ [e] (fprintf (current-error-port) "[Failed]~a: ~a~n" src.java (exn-message e)))])
                   (gbk->utf8 src.java))])))
