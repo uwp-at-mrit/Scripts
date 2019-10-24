@@ -24,7 +24,8 @@
                                      (cons plc sclp))))]))))))
 
 (define memory (make-bytes #x1264))
-(define master-ipv4 (vector-ref (current-command-line-arguments) 0))
+(define master-ipv4 (with-handlers ([exn? (λ [_] #false)]) (vector-ref (current-command-line-arguments) 0)))
+(define master-port 2008)
 
 (define db4 4122)
 (define db205 4322)
@@ -106,27 +107,37 @@
       (cond [(= db 4) (values (cons idx a4) a205)]
             [else (values a4 (cons idx a205))]))))
 
+(define (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport)
+  (define-values (signature data) (read-mrmsg /dev/tcpin 40))
+  (define-values (db addr0 addrn) (values (mrmsg-block signature) (mrmsg-addr0 signature) (mrmsg-addrn signature)))
+  
+  (case (mrmsg-code signature)
+    [(#x41) (refresh-memory alarms4 alarms205)
+            (printf ">> [sent ~a bytes to ~a:~a]~n"
+                    (write-mrmsg /dev/tcpout (mrmsg-code signature) (mrmsg-block signature) addr0 addrn memory)
+                    remote rport)]
+    [else (void)])
+  (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport))
+
 (with-handlers ([exn:break? void])
   (let connect-send-wait-loop ()
     (with-handlers ([exn:fail? (λ [e] (fprintf (current-error-port) "~a~n" (exn-message e)))])
       (parameterize ([current-custodian (make-custodian)])
         (dynamic-wind
          (thunk (void))
-         (thunk (let-values ([(/dev/tcpin /dev/tcpout) (tcp-connect/enable-break master-ipv4 2008)])
-                  (define-values (local lport remote rport) (tcp-addresses /dev/tcpout #true))
-                  (printf "[connected to ~a:~a]~n" remote rport)
-
-                  (let wait-read-response-loop ()
-                    (define-values (signature data) (read-mrmsg /dev/tcpin 40))
-                    (define-values (db addr0 addrn) (values (mrmsg-block signature) (mrmsg-addr0 signature) (mrmsg-addrn signature)))
-
-                    (case (mrmsg-code signature)
-                      [(#x41) (refresh-memory alarms4 alarms205)
-                              (printf ">> [sent ~a bytes to ~a:~a]~n"
-                                      (write-mrmsg /dev/tcpout (mrmsg-code signature) (mrmsg-block signature) addr0 addrn memory)
-                                      remote rport)]
-                      [else (void)])
-                    (wait-read-response-loop))))
+         (thunk (if (string? master-ipv4)
+                    (let-values ([(/dev/tcpin /dev/tcpout) (tcp-connect/enable-break master-ipv4 master-port)])
+                      (define-values (local lport remote rport) (tcp-addresses /dev/tcpout #true))
+                      (printf "[connected to ~a:~a]~n" remote rport)
+                      (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport))
+                    (let ([listener (tcp-listen master-port)])
+                      (define-values (hostname port _r _p) (tcp-addresses listener #true))
+                      (printf "> ~a:~a~n" hostname port)
+                      
+                      (let-values ([(/dev/tcpin /dev/tcpout) (tcp-accept/enable-break listener)])
+                        (define-values (local lport remote rport) (tcp-addresses /dev/tcpout #true))
+                        (printf "[accepted ~a:~a]~n" remote rport)
+                        (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport)))))
          (thunk (custodian-shutdown-all (current-custodian))))))
     
     (sleep 1)
