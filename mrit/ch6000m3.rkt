@@ -18,9 +18,9 @@
           (cond [(eof-object? timepoint) (reverse sclp)]
                 [else (let ([addr0 (read /dev/plcin)]
                             [addrn (read /dev/plcin)])
-                        (read-line /dev/plcin)
+                        (read-line /dev/plcin 'return-linefeed)
                         (port->plc (let ([plc (read-bytes (add1 (- addrn addr0)) /dev/plcin)])
-                                     (read-line /dev/plcin)
+                                     (read-line /dev/plcin 'return-linefeed)
                                      (cons plc sclp))))]))))))
 
 (define memory (make-bytes #x1264))
@@ -53,7 +53,8 @@
   (let ([plc (sequence->repeated-generator ch6000m3.plc)])
   (lambda [alarms4 alarms205]
     (cond [(null? ch6000m3.plc) (bytes-fill! memory 0)]
-          [else (bytes-copy! memory 0 (plc) 0 (bytes-length memory))])
+          [else (displayln "use history snapshot")
+                (bytes-copy! memory 0 (plc) 0 (bytes-length memory))])
 
     ;;; DB2
     (when (null? ch6000m3.plc)

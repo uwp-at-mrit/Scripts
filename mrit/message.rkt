@@ -62,6 +62,18 @@
     (flush-output /dev/tcpout)
 
     (printf "[sending message signature: ~a ~a]~n" (bytes->hex-string header) (bytes->hex-string tail))
+
+    #;(when (bytes? memory)
+      (define col 64)
+
+      (for ([b (in-bytes memory)]
+            [i (in-naturals 1)])
+        (display (~r b #:base 16 #:min-width 2 #:pad-string "0"))
+        (cond [(= (remainder i col) 0) (newline)]
+              [else (display #\space)]))
+
+      (unless (= (remainder (bytes-length memory) col) 0)
+        (newline)))
     
     (+ hsize msize tsize)))
 
