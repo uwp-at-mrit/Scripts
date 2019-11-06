@@ -1,19 +1,9 @@
 #lang racket
 
+(require "message.rkt")
+
 (require racket/tcp)
-(require racket/date)
-
-(date-display-format 'iso-8601)
-
-(define server (vector-ref (current-command-line-arguments) 0))
-(define port (string->number (vector-ref (current-command-line-arguments) 1)))
-
-(define make-message
-  (lambda [msg]
-    (define now (seconds->date (* (current-inexact-milliseconds) 0.001)))
-    (string-append "[" (date->string now #true)
-                   "." (~a #:min-width 3 #:align 'right #:pad-string "0" (exact-round (/ (date*-nanosecond now) 1000000)))
-                   "]" (~a msg))))
+(require file/sha1)
 
 (with-handlers ([exn:break? void])
   (let connect-send-wait-loop ()
@@ -21,20 +11,10 @@
       (parameterize ([current-custodian (make-custodian)])
         (dynamic-wind
          (thunk (void))
-         (thunk (let-values ([(/dev/tcpin /dev/mbout) (tcp-connect/enable-break server port)])
-                  (let ([now (seconds->date (* (current-inexact-milliseconds) 0.001))])
-                    (define greetings (make-message (format "Hello, I am Racket! 我替代了例子中的客户端(~a)。" 'github:microsoft/windows-universal-samples.git)))
-                    (write-bytes (integer->integer-bytes (random #xFFFF) 2 #false #true) /dev/mbout)
-                    (write-bytes (integer->integer-bytes #x00 2 #false #true) /dev/mbout)
-                    (write-bytes (integer->integer-bytes (+ (string-utf-8-length greetings) 2) 2 #false #true) /dev/mbout)
-                    (write-byte #xFF /dev/mbout)
-                    (write-byte #x05 /dev/mbout)
-                    (write-string greetings /dev/mbout)
-                    (flush-output /dev/mbout)
-                    (displayln greetings)
-
-                    (for ([line (in-port read-line /dev/tcpin)])
-                      (displayln line)))))
+         (thunk (let-values ([(/dev/tcpin /dev/tcpout) (tcp-connect/enable-break "192.168.8.100" 2100)])
+                  (write-mrmsg /dev/tcpout 65 98 1 4571)
+                  (define-values (signature data) (read-mrmsg /dev/tcpin))
+                  (displayln signature)))
          (thunk (custodian-shutdown-all (current-custodian))))))
     
     (sleep 1)
