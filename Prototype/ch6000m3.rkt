@@ -1,5 +1,7 @@
 #lang racket
 
+(provide plc-slaver)
+
 (require "message.rkt")
 (require "../catalogue/tongue.rkt")
 (require "../../CH6000m3/SCADA/stone/tongue/alarm.resw.rkt")
@@ -119,7 +121,7 @@
     [else (void)])
   (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport))
 
-(with-handlers ([exn:break? void])
+(define (plc-slaver)
   (let connect-send-wait-loop ()
     (with-handlers ([exn:fail? (λ [e] (fprintf (current-error-port) "~a~n" (exn-message e)))])
       (parameterize ([current-custodian (make-custodian)])
@@ -132,7 +134,7 @@
                       (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport))
                     (let ([listener (tcp-listen master-port)])
                       (define-values (hostname port _r _p) (tcp-addresses listener #true))
-                      (printf "> ~a:~a~n" hostname port)
+                      (printf "> PLC:~a:~a~n" hostname port)
                       
                       (let-values ([(/dev/tcpin /dev/tcpout) (tcp-accept/enable-break listener)])
                         (define-values (local lport remote rport) (tcp-addresses /dev/tcpout #true))
@@ -142,3 +144,7 @@
     
     (sleep 1)
     (connect-send-wait-loop)))
+
+(module+ main
+  (with-handlers ([exn? void])
+    (plc-slaver)))
