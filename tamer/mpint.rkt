@@ -2,39 +2,47 @@
 
 (require digimon/number)
 
-(define base256
+(define cout
+  (lambda [str n prefix]
+    (when (integer? n)
+      (define bits (integer-length n))
+      (define hex (string-upcase (number->string n 16)))
+      (define-values (size mod) (quotient/remainder (string-length hex) 2))
+      (cond [(= mod 0) (printf "\"~a\", ~a, ~a, \"~a~a\"~n" hex size (integer-length n) prefix str)]
+            [else (printf "\"0~a\", ~a, ~a, \"~a~a\"~n" hex (add1 size) (integer-length n) prefix str)]))))
+
+(define memory
   (lambda [str]
     (define n (network-bytes->natural (string->bytes/utf-8 str)))
-    (define hex (number->string n 16))
-    (define-values (size mod) (quotient/remainder (string-length hex) 2))
-    (printf "\"~a\", ~a, ~a, \"#x~a\"~n" hex (if (= mod 0) size (add1 size)) (integer-length n) str)))
+    (cout str n "#F")))
 
 (define hexadecimal
   (lambda [str]
     (define n (string->number str 16))
-    
-    (when (integer? n)
-      (define hex (number->string n 16))
-      (define-values (size mod) (quotient/remainder (string-length hex) 2))
-      (printf "\"~a\", ~a, ~a, \"#x~a\"~n" hex (if (= mod 0) size (add1 size)) (integer-length n) str))))
+    (cout str n "#x")))
 
 (define decimal
   (lambda [str]
     (define dec (string->number str 10))
-    
-    (when (integer? dec)
-      (define hex (number->string dec 16))
-      (define-values (size mod) (quotient/remainder (string-length hex) 2))
-      (printf "\"~a\", ~a, ~a, \"~a\"~n" hex (if (= mod 0) size (add1 size)) (integer-length dec) str))))
+    (cout str dec "")))
+
+(define octal
+  (lambda [str]
+    (define dec (string->number str 8))
+    (cout str dec "")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(base256 "1234567890ABCDEF")
+(memory "1234567890ABCDEF")
+(memory "\0A\0B\0C\0D\0E\0F")
 
 (hexadecimal "1234567890ABCDEF")
 (hexadecimal "FEDCBA098765432")
 (hexadecimal "000000789FEDCBA")
 
-(decimal "890")
-(decimal "1234567890")
+(decimal "0000000890")
+(decimal "123456789")
 (decimal "098765432")
-(decimal "000000789")
+
+(octal "00000567")
+(octal "0123456776543210")
+(octal "7654321001234567")
