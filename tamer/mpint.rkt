@@ -11,6 +11,19 @@
       (cond [(= mod 0) (printf "\"~a\", ~a, ~a, \"~a~a\"~n" hex size (integer-length n) prefix str)]
             [else (printf "\"0~a\", ~a, ~a, \"~a~a\"~n" hex (add1 size) (integer-length n) prefix str)]))))
 
+(define arithmetic
+  (lambda [op str-lhs str-rhs]
+    (define lhs (string->number str-lhs 16))
+    (define rhs (string->number str-rhs 16))
+    (when (and (integer? lhs) (integer? rhs))
+      (define n (op lhs rhs))
+      (define hex (string-upcase (number->string n 16)))
+      (define-values (size mod) (quotient/remainder (string-length hex) 2))
+      (define expr (format "(~a #x~a #x~a)" (object-name op) str-lhs str-rhs))
+      (cond [(= mod 0) (printf "\"~a\", ~a ~a~n" hex (integer-length n) expr)]
+            [else (printf "\"0~a\", ~a ~a~n" hex (integer-length n) expr)]))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define memory
   (lambda [str]
     (define n (network-bytes->natural (string->bytes/utf-8 str)))
@@ -29,20 +42,51 @@
 (define octal
   (lambda [str]
     (define dec (string->number str 8))
-    (cout str dec "")))
+    (cout str dec "#o")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+'memory
 (memory "1234567890ABCDEF")
 (memory "\0A\0B\0C\0D\0E\0F")
 
+'hexadecimal
 (hexadecimal "1234567890ABCDEF")
 (hexadecimal "FEDCBA098765432")
 (hexadecimal "000000789FEDCBA")
 
+'decimal
 (decimal "0000000890")
 (decimal "123456789")
 (decimal "098765432")
 
+'octal
 (octal "00000567")
 (octal "0123456776543210")
 (octal "7654321001234567")
+
+'+
+(arithmetic + "1" "0")
+(arithmetic + "2" "113198824")
+(arithmetic + "3" "0")
+(arithmetic + "2718281828459045" "3141592653589793")
+(arithmetic + "6243299885435508" "6601618158468695")
+(arithmetic + "7642236535892206" "9159655941772190")
+(arithmetic + "161803398874989484820" "35323")
+(arithmetic + "765432100123456789ABCDEF" "765432100123456789ABCDEF")
+(arithmetic + "00000000765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
+(arithmetic + "FECDBA98765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
+
+
+'*
+(arithmetic * "1" "0")
+(arithmetic * "2" "113198824")
+(arithmetic * "3" "0")
+(arithmetic * "392" "1")
+(arithmetic * "392" "54")
+(arithmetic * "2718281828459045" "3141592653589793")
+(arithmetic * "6243299885435508" "6601618158468695")
+(arithmetic * "7642236535892206" "9159655941772190")
+(arithmetic * "161803398874989484820" "1")
+(arithmetic * "765432100123456789ABCDEF" "765432100123456789ABCDEF")
+(arithmetic * "00000000765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
+(arithmetic * "FECDBA98765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
