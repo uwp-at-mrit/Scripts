@@ -13,12 +13,13 @@
 (define-syntax (define-table stx)
   (syntax-parse stx #:datum-literals [:]
     [(define-table
-       table #:as Table #:with primary-key
+       tbl #:as Table #:with primary-key
        (~optional (~seq #:order-by order-by) #:defaults ([order-by #'#false]))
        ([field : DataType constraints ...] ...)
        (~or (~optional (~seq #:include addition-hpps) #:name "#:include" #:defaults ([addition-hpps #'[]]))
             (~optional (~seq #:namespace addition-nses) #:name "#:namespace" #:defaults ([addition-nses #'[]]))) ...)
-     (with-syntax* ([(rowid ...) (parse-primary-key #'primary-key)]
+     (with-syntax* ([(table dbtable) (parse-table-name #'tbl)]
+                    [(rowid ...) (parse-primary-key #'primary-key)]
                     [order_by (parse-order-by #'order-by (map syntax-e (syntax->list #'(field ...))))]
                     [Table-pk (format-id #'Table "~a_pk" (syntax-e #'Table))]
                     [ITableCursor (format-id #'Table "I~aCursor" (syntax-e #'Table))]
@@ -110,18 +111,18 @@
                       (&restore-table 'restore-table 'Table '(field ...) '(DataType ...) '(not-null ...) '(rowid ...))
 
                       (&separator)
-                      (&create-table 'create-table 'table 'table-columns 'table-rowids)
-                      (&insert-table 'insert-table 'Table 'table 'store-table 'table-columns)
-                      (&foreach-table 'foreach-table 'ITableCursor 'Table 'table 'restore-table 'table-columns '_)
-                      (&select-table 'select-table 'Table 'table 'restore-table 'table-columns '_)
-                      (&seek-table 'seek-table 'Table 'table 'restore-table 'table-columns 'Table-pk '(rowid ...) 'table-rowids)
-                      (&update-table 'update-table 'Table 'table '(rowid ...) '(field ...) 'table-rowids 'table-columns 'refresh-table)
-                      (&delete-table 'delete-table 'Table-pk 'table '(rowid ...) 'table-rowids 'table-columns)
-                      (&drop-table 'drop-table 'table 'table-columns)
+                      (&create-table 'create-table 'table 'dbtable 'table-columns 'table-rowids)
+                      (&insert-table 'insert-table 'Table 'table 'dbtable 'store-table 'table-columns)
+                      (&foreach-table 'foreach-table 'ITableCursor 'Table 'table 'dbtable 'restore-table 'table-columns '_)
+                      (&select-table 'select-table 'Table 'table 'dbtable 'restore-table 'table-columns '_)
+                      (&seek-table 'seek-table 'Table 'table 'dbtable 'restore-table 'table-columns 'Table-pk '(rowid ...) 'table-rowids)
+                      (&update-table 'update-table 'Table 'table 'dbtable '(rowid ...) '(field ...) 'table-rowids 'table-columns 'refresh-table)
+                      (&delete-table 'delete-table 'Table-pk 'table 'dbtable '(rowid ...) 'table-rowids 'table-columns)
+                      (&drop-table 'drop-table 'table 'dbtable 'table-columns)
 
                       (&separator)
-                      (&table-aggregate 'table 'average 'double 'query_double 'table-columns)
-                      (&table-aggregate 'table 'count 'int64 'query_int64 'table-columns)
-                      (&table-aggregate 'table 'max 'std::optional<double> 'query_maybe_double 'table-columns)
-                      (&table-aggregate 'table 'min 'std::optional<double> 'query_maybe_double 'table-columns)
-                      (&table-aggregate 'table 'sum 'std::optional<double> 'query_maybe_double 'table-columns))))))]))
+                      (&table-aggregate 'table 'average 'double 'query_double 'table-columns 'dbtable)
+                      (&table-aggregate 'table 'count 'int64 'query_int64 'table-columns 'dbtable)
+                      (&table-aggregate 'table 'max 'std::optional<double> 'query_maybe_double 'table-columns 'dbtable)
+                      (&table-aggregate 'table 'min 'std::optional<double> 'query_maybe_double 'table-columns 'dbtable)
+                      (&table-aggregate 'table 'sum 'std::optional<double> 'query_maybe_double 'table-columns 'dbtable))))))]))

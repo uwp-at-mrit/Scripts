@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/gui
 
 (define force-remake (make-parameter #false))
 

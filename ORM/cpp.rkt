@@ -211,12 +211,12 @@
    [(table λname type indent)
     (&htab indent) (printf "~a ~a_~a(~a::IDBSystem* dbc, ~a::~a column = ~a::_, bool distinct = false);~n"
                            type table λname ns:: ns:: table table)]
-   [(table λname type query_value column_infos)
+   [(table λname type query_value column_infos dbtable)
     (printf "~a ~a::~a_~a(~a::IDBSystem* dbc, ~a column, bool distinct) {~n" type ns:: table λname ns:: table)
     (&htab 1) (printf "IVirtualSQL* vsql = dbc->make_sql_factory(~a);~n" column_infos)
     (&htab 1) (printf "const char* colname = ((column == ~a::_) ? nullptr : ~a[static_cast<unsigned int>(column)].name);~n" table column_infos)
     (&linebreak 1)
-    (&htab 1) (printf "return dbc->~a(vsql->table_~a(~s, colname, distinct));~n" query_value λname (symbol->string table))
+    (&htab 1) (printf "return dbc->~a(vsql->table_~a(~s, colname, distinct));~n" query_value λname (symbol->string dbtable))
     (&brace 0)
     (&linebreak 1)]))
 
@@ -225,10 +225,10 @@
   (case-lambda
     [(λname indent)
      (&htab indent) (printf "void ~a(~a::IDBSystem* dbc, bool if_not_exists = true);~n" λname ns::)]
-    [(λname tablename column_infos table_rowids)
+    [(λname tablename dbtablename column_infos table_rowids)
      (printf "void ~a::~a(IDBSystem* dbc, bool if_not_exists) {~n" ns:: λname)
      (&htab 1) (printf "IVirtualSQL* vsql = dbc->make_sql_factory(~a);~n" column_infos)
-     (&htab 1) (printf "~a sql = vsql->create_table(~s, ~a, sizeof(~a)/sizeof(char*), if_not_exists);~n" cstring (symbol->string tablename) table_rowids table_rowids)
+     (&htab 1) (printf "~a sql = vsql->create_table(~s, ~a, sizeof(~a)/sizeof(char*), if_not_exists);~n" cstring (symbol->string dbtablename) table_rowids table_rowids)
      (&linebreak 1)
      (&htab 1) (printf "dbc->exec(sql);~n")
      (&brace 0)
@@ -239,14 +239,14 @@
     [(λname Table indent)
      (&htab indent) (printf "void ~a(~a::IDBSystem* dbc, ~a& self, bool replace = false);~n" λname ns:: Table)
      (&htab indent) (printf "void ~a(~a::IDBSystem* dbc, ~a* selves, size_t count, bool replace = false);~n" λname ns:: Table)]
-    [(λname Table tablename store column_infos)
+    [(λname Table tablename dbtablename store column_infos)
      (printf "void ~a::~a(IDBSystem* dbc, ~a& self, bool replace) {~n" ns:: λname Table)
      (&htab 1) (printf "~a(dbc, &self, 1, replace);~n" λname)
      (&brace 0)
      (&linebreak 1)
      (printf "void ~a::~a(IDBSystem* dbc, ~a* selves, size_t count, bool replace) {~n" ns:: λname Table)
      (&htab 1) (printf "IVirtualSQL* vsql = dbc->make_sql_factory(~a);~n" column_infos)
-     (&htab 1) (printf "~a sql = vsql->insert_into(~s, replace);~n" cstring (symbol->string tablename))
+     (&htab 1) (printf "~a sql = vsql->insert_into(~s, replace);~n" cstring (symbol->string dbtablename))
      (&htab 1) (printf "IPreparedStatement* stmt = dbc->prepare(sql);~n")
      (&linebreak 1)
      (&htab 1) (printf "if (stmt != nullptr) {~n")
@@ -268,11 +268,11 @@
      (&htab indent)
      (printf "void ~a(~a::IDBSystem* dbc, ~a::~a* cursor, uint64 limit = 0U, uint64 offset = 0U, ~a::~a order_by = ~a::~a, bool asc = true);~n"
              λname ns:: ns:: ITableCursor ns:: tablename tablename (or order_by '_))]
-    [(λname ITableCursor Table tablename restore column_infos _)
+    [(λname ITableCursor Table tablename dbtablename restore column_infos _)
      (printf "void ~a::~a(IDBSystem* dbc, ~a* cursor, uint64 limit, uint64 offset, ~a order_by, bool asc) {~n" ns:: λname ITableCursor tablename)
      (&htab 1) (printf "IVirtualSQL* vsql = dbc->make_sql_factory(~a);~n" column_infos)
      (&htab 1) (printf "const char* colname = ((order_by == ~a::_) ? nullptr : ~a[static_cast<unsigned int>(order_by)].name);~n" tablename column_infos)
-     (&htab 1) (printf "~a sql = vsql->select_from(~s, colname, asc, limit, offset);~n" cstring (symbol->string tablename))
+     (&htab 1) (printf "~a sql = vsql->select_from(~s, colname, asc, limit, offset);~n" cstring (symbol->string dbtablename))
      (&htab 1) (printf "IPreparedStatement* stmt = dbc->prepare(sql);~n")
      (&linebreak 1)
      (&htab 1) (printf "if (stmt != nullptr) {~n")
@@ -295,11 +295,11 @@
      (&htab indent)
      (printf "std::list<~a::~a> ~a(~a::IDBSystem* dbc, uint64 limit = 0U, uint64 offset = 0U, ~a::~a order_by = ~a::~a, bool asc = true);~n"
              ns:: Table λname ns:: ns:: tablename tablename (or order_by '_))]
-    [(λname Table tablename restore column_infos _)
+    [(λname Table tablename dbtablename restore column_infos _)
      (printf "std::list<~a> ~a::~a(IDBSystem* dbc, uint64 limit, uint64 offset, ~a order_by, bool asc) {~n" Table ns:: λname tablename)
      (&htab 1) (printf "IVirtualSQL* vsql = dbc->make_sql_factory(~a);~n" column_infos)
      (&htab 1) (printf "const char* colname = ((order_by == ~a::_) ? nullptr : ~a[static_cast<unsigned int>(order_by)].name);~n" tablename column_infos)
-     (&htab 1) (printf "~a sql = vsql->select_from(~s, colname, asc, limit, offset);~n" cstring (symbol->string tablename))
+     (&htab 1) (printf "~a sql = vsql->select_from(~s, colname, asc, limit, offset);~n" cstring (symbol->string dbtablename))
      (&htab 1) (printf "IPreparedStatement* stmt = dbc->prepare(sql);~n")
      (&htab 1) (printf "std::list<~a> queries;~n" Table)
      (&linebreak 1)
@@ -322,10 +322,10 @@
   (case-lambda
     [(λname Table Table_pk indent)
      (&htab indent) (printf "std::optional<~a::~a> ~a(~a::IDBSystem* dbc, ~a::~a where);~n" ns:: Table λname ns:: ns:: Table_pk)]
-    [(λname Table tablename restore column_infos Table_pk rowids table-rowids)
+    [(λname Table tablename dbtablename restore column_infos Table_pk rowids table-rowids)
      (printf "std::optional<~a> ~a::~a(IDBSystem* dbc, ~a where) {~n" Table ns:: λname Table_pk)
      (&htab 1) (printf "IVirtualSQL* vsql = dbc->make_sql_factory(~a);~n" column_infos)
-     (&htab 1) (printf "~a sql = vsql->seek_from(~s, ~a, sizeof(~a)/sizeof(char*));~n" cstring (symbol->string tablename) table-rowids table-rowids)
+     (&htab 1) (printf "~a sql = vsql->seek_from(~s, ~a, sizeof(~a)/sizeof(char*));~n" cstring (symbol->string dbtablename) table-rowids table-rowids)
      (&htab 1) (printf "IPreparedStatement* stmt = dbc->prepare(sql);~n")
      (&htab 1) (printf "std::optional<~a> query;~n" Table)
      (&linebreak 1)
@@ -351,7 +351,7 @@
     [(λname Table indent)
      (&htab indent) (printf "void ~a(~a::IDBSystem* dbc, ~a::~a& self, bool refresh = true);~n" λname ns:: ns:: Table)
      (&htab indent) (printf "void ~a(~a::IDBSystem* dbc, ~a::~a* selves, size_t count, bool refresh = true);~n" λname ns:: ns:: Table)]
-    [(λname Table tablename rowids fields table-rowids column_infos refresh)
+    [(λname Table tablename dbtablename rowids fields table-rowids column_infos refresh)
      (define nonrowids (remove* rowids fields))
      (printf "void ~a::~a(IDBSystem* dbc, ~a& self, bool refresh) {~n" ns:: λname Table)
      (&htab 1) (printf "~a(dbc, &self, 1, refresh);~n" λname)
@@ -359,7 +359,7 @@
      (&linebreak 1)
      (printf "void ~a::~a(IDBSystem* dbc, ~a* selves, size_t count, bool refresh) {~n" ns:: λname Table)
      (&htab 1) (printf "IVirtualSQL* vsql = dbc->make_sql_factory(~a);~n" column_infos)
-     (&htab 1) (printf "~a sql = vsql->update_set(~s, ~a, sizeof(~a)/sizeof(char*));~n" cstring (symbol->string tablename) table-rowids table-rowids)
+     (&htab 1) (printf "~a sql = vsql->update_set(~s, ~a, sizeof(~a)/sizeof(char*));~n" cstring (symbol->string dbtablename) table-rowids table-rowids)
      (&htab 1) (printf "IPreparedStatement* stmt = dbc->prepare(sql);~n")
      (&linebreak 1)
      (&htab 1) (printf "if (stmt != nullptr) {~n")
@@ -386,14 +386,14 @@
     [(λname Table_pk indent)
      (&htab indent) (printf "void ~a(~a::IDBSystem* dbc, ~a::~a& where);~n" λname ns:: ns:: Table_pk)
      (&htab indent) (printf "void ~a(~a::IDBSystem* dbc, ~a::~a* wheres, size_t count);~n" λname ns:: ns:: Table_pk)]
-    [(λname Table_pk tablename rowids table-rowids column_infos)
+    [(λname Table_pk tablename dbtablename rowids table-rowids column_infos)
      (printf "void ~a::~a(IDBSystem* dbc, ~a& where) {~n" ns:: λname Table_pk)
      (&htab 1) (printf "~a(dbc, &where, 1);~n" λname)
      (&brace 0)
      (&linebreak 1)
      (printf "void ~a::~a(IDBSystem* dbc, ~a* wheres, size_t count) {~n" ns:: λname Table_pk)
      (&htab 1) (printf "IVirtualSQL* vsql = dbc->make_sql_factory(~a);~n" column_infos)
-     (&htab 1) (printf "~a sql = vsql->delete_from(~s, ~a, sizeof(~a)/sizeof(char*));~n" cstring (symbol->string tablename) table-rowids table-rowids)
+     (&htab 1) (printf "~a sql = vsql->delete_from(~s, ~a, sizeof(~a)/sizeof(char*));~n" cstring (symbol->string dbtablename) table-rowids table-rowids)
      (&htab 1) (printf "IPreparedStatement* stmt = dbc->prepare(sql);~n")
      (&linebreak 1)
      (&htab 1) (printf "if (stmt != nullptr) {~n")
@@ -413,10 +413,10 @@
   (case-lambda
     [(λname indent)
      (&htab indent) (printf "void ~a(~a::IDBSystem* dbc);~n" λname ns::)]
-    [(λname tablename column_infos)
+    [(λname tablename dbtablename column_infos)
      (printf "void ~a::~a(IDBSystem* dbc) {~n" ns:: λname)
      (&htab 1) (printf "IVirtualSQL* vsql = dbc->make_sql_factory(~a);~n" column_infos)
-     (&htab 1) (printf "~a sql = vsql->drop_table(~s);~n" cstring (symbol->string tablename))
+     (&htab 1) (printf "~a sql = vsql->drop_table(~s);~n" cstring (symbol->string dbtablename))
      (&linebreak)
      (&htab 1) (printf "dbc->exec(sql);~n")
      (&brace 0)

@@ -25,6 +25,11 @@
                      (or (attribute generate) #'#false)
                      (and not-null? #'#true)
                      (and (attribute unique) #'#true)))]))
+
+  (define (parse-table-name stx)
+    (syntax-parse stx
+      [r:id (list #'r #'r)]
+      [(r db) (list #'r #'db)]))
   
   (define (parse-primary-key stx)
     ; NOTE: primary keys may not contained in the defining struct in which case the struct is treated as a temporary view
