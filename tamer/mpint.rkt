@@ -105,8 +105,7 @@
 (arithmetic * "FECDBA98765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
 (arithmetic * "3006050FB7A76AC18302FB593358" "20539")
 
-
-'<<
+'bitwise
 (bitwise arithmetic-shift "2718281828459045" 10)
 (bitwise arithmetic-shift "6243299885435508" 92)
 
@@ -114,3 +113,19 @@
 (bitwise arithmetic-shift "6243299885435508" -45)
 (bitwise arithmetic-shift "FECDBA98765432100123456789ABCDEF" -92)
 (bitwise arithmetic-shift "765432100123456789ABCDEF" -108)
+
+(bitwise bitwise-and "ABC" 0)
+(bitwise bitwise-and "ABCDEF" #xAB00FFFF00)
+(bitwise bitwise-and "90ABCDEF" #xCD00FFFF00)
+(bitwise bitwise-and "567890ABCDEF" #xEF00FFFF00)
+
+(bitwise bitwise-ior "ABC" 0)
+(bitwise bitwise-ior "ABCDEF" #xAB00FFFF00)
+(bitwise bitwise-ior "90ABCDEF" #xCD00FFFF00)
+(bitwise bitwise-ior "567890ABCDEF" #xEF00FFFF00)
+
+(bitwise bitwise-xor "ABC" 0)
+(bitwise bitwise-xor "ABC" #xABC)
+(bitwise bitwise-xor "ABCDEF" #xAB00FFCDEF)
+(bitwise bitwise-xor "90ABCDEF" #xCD00FFFF00)
+(bitwise bitwise-xor "567890ABCDEF" #xEF00FFFF00)
