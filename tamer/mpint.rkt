@@ -23,6 +23,17 @@
       (cond [(= mod 0) (printf "\"~a\", ~a ~a~n" hex (integer-length n) expr)]
             [else (printf "\"0~a\", ~a ~a~n" hex (integer-length n) expr)]))))
 
+(define bitwise
+  (lambda [op str-lhs rhs]
+    (define lhs (string->number str-lhs 16))
+    (when (and (integer? lhs) (integer? rhs))
+      (define n (op lhs rhs))
+      (define hex (string-upcase (number->string n 16)))
+      (define-values (size mod) (quotient/remainder (string-length hex) 2))
+      (define expr (format "(~a #x~a ~a)" (object-name op) str-lhs rhs))
+      (cond [(= mod 0) (printf "\"~a\" ~a~n" hex expr)]
+            [else (printf "\"0~a\" ~a~n" hex expr)]))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define memory
   (lambda [str]
@@ -93,3 +104,13 @@
 (arithmetic * "00000000765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
 (arithmetic * "FECDBA98765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
 (arithmetic * "3006050FB7A76AC18302FB593358" "20539")
+
+
+'<<
+(bitwise arithmetic-shift "2718281828459045" 10)
+(bitwise arithmetic-shift "6243299885435508" 92)
+
+(bitwise arithmetic-shift "2718281828459045" -10)
+(bitwise arithmetic-shift "6243299885435508" -45)
+(bitwise arithmetic-shift "FECDBA98765432100123456789ABCDEF" -92)
+(bitwise arithmetic-shift "765432100123456789ABCDEF" -108)
