@@ -1,6 +1,7 @@
 #lang racket
 
 (require digimon/number)
+(require digimon/format)
 
 (define cout
   (lambda [str n prefix]
@@ -24,15 +25,34 @@
             [else (printf "\"0~a\", ~a ~a~n" hex (integer-length n) expr)]))))
 
 (define bitwise
-  (lambda [op str-lhs rhs]
-    (define lhs (string->number str-lhs 16))
-    (when (and (integer? lhs) (integer? rhs))
-      (define n (op lhs rhs))
-      (define hex (string-upcase (number->string n 16)))
-      (define-values (size mod) (quotient/remainder (string-length hex) 2))
-      (define expr (format "(~a #x~a ~a)" (object-name op) str-lhs rhs))
-      (cond [(= mod 0) (printf "\"~a\" ~a~n" hex expr)]
-            [else (printf "\"0~a\" ~a~n" hex expr)]))))
+  (case-lambda
+    [(op str-lhs)
+     (define lhs (string->number str-lhs 16))
+     (when (and (integer? lhs))
+       (define n (op lhs))
+       (define hex (bytes->hex-string (integer->network-bytes n)))
+       (define-values (size mod) (quotient/remainder (string-length hex) 2))
+       (define expr (format "(~a #x~a)" (object-name op) str-lhs))
+       (cond [(= mod 0) (printf "\"~a\" ~a~n" hex expr)]
+             [else (printf "\"0~a\" ~a~n" hex expr)]))]
+    [(op str-lhs rhs)
+     (define lhs (string->number str-lhs 16))
+     (when (and (integer? lhs) (integer? rhs))
+       (define n (op lhs rhs))
+       (define hex (string-upcase (number->string n 16)))
+       (define-values (size mod) (quotient/remainder (string-length hex) 2))
+       (define expr (format "(~a #x~a ~a)" (object-name op) str-lhs rhs))
+       (cond [(= mod 0) (printf "\"~a\" ~a~n" hex expr)]
+             [else (printf "\"0~a\" ~a~n" hex expr)]))]
+    [(op str-lhs start end)
+     (define lhs (string->number str-lhs 16))
+     (when (and (integer? lhs) (integer? start) (integer? end))
+       (define n (op lhs start end))
+       (define hex (string-upcase (number->string n 16)))
+       (define-values (size mod) (quotient/remainder (string-length hex) 2))
+       (define expr (format "(~a #x~a ~a ~a)" (object-name op) str-lhs start end))
+       (cond [(= mod 0) (printf "\"~a\" ~a~n" hex expr)]
+             [else (printf "\"0~a\" ~a~n" hex expr)]))]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define memory
@@ -81,6 +101,7 @@
 (arithmetic + "1" "0")
 (arithmetic + "2" "113198824")
 (arithmetic + "3" "0")
+(arithmetic + "FF" "FFFF01")
 (arithmetic + "2718281828459045" "3141592653589793")
 (arithmetic + "6243299885435508" "6601618158468695")
 (arithmetic + "7642236535892206" "9159655941772190")
@@ -126,6 +147,6 @@
 
 (bitwise bitwise-xor "ABC" 0)
 (bitwise bitwise-xor "ABC" #xABC)
+(bitwise bitwise-xor "ABC" #xACD)
 (bitwise bitwise-xor "ABCDEF" #xAB00FFCDEF)
-(bitwise bitwise-xor "90ABCDEF" #xCD00FFFF00)
-(bitwise bitwise-xor "567890ABCDEF" #xEF00FFFF00)
+(bitwise bitwise-xor "34567890ABCDEF" #xEF00FFFF00)
