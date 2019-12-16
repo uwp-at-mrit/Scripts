@@ -17,7 +17,7 @@
     (define lhs (string->number str-lhs 16))
     (define rhs (string->number str-rhs 16))
     (when (and (integer? lhs) (integer? rhs))
-      (define n (op lhs rhs))
+      (define n (op (max lhs rhs) (min lhs rhs)))
       (define hex (string-upcase (number->string n 16)))
       (define-values (size mod) (quotient/remainder (string-length hex) 2))
       (define expr (format "(~a #x~a #x~a)" (object-name op) str-lhs str-rhs))
@@ -99,8 +99,6 @@
 
 '+
 (arithmetic + "1" "0")
-(arithmetic + "2" "113198824")
-(arithmetic + "3" "0")
 (arithmetic + "FF" "FFFF01")
 (arithmetic + "2718281828459045" "3141592653589793")
 (arithmetic + "6243299885435508" "6601618158468695")
@@ -111,12 +109,23 @@
 (arithmetic + "FECDBA98765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
 (arithmetic + "3006050FB7A76AC18302FB593358" "20539")
 
+'-
+(arithmetic - "1" "0")
+(arithmetic - "100" "FF")
+(arithmetic - "10000" "FF")
+(arithmetic - "2718281828459045" "3141592653589793")
+(arithmetic - "6243299885435508" "6601618158468695")
+(arithmetic - "7642236535892206" "9159655941772190")
+(arithmetic - "161803398874989484820" "35323")
+(arithmetic - "765432100123456789ABCDEF" "765432100123456789ABCDEF")
+(arithmetic - "00000000765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
+(arithmetic - "FECDBA98765432100123456789ABCDEF" "FECDBA98765432100123456789ABCDEF")
+(arithmetic - "3006050FB7A76AC18302FB593358" "20539")
+
 '*
 (arithmetic * "1" "0")
-(arithmetic * "2" "113198824")
-(arithmetic * "3" "0")
-(arithmetic * "392" "1")
 (arithmetic * "392" "54")
+(arithmetic * "2" "113198824")
 (arithmetic * "2718281828459045" "3141592653589793")
 (arithmetic * "6243299885435508" "6601618158468695")
 (arithmetic * "7642236535892206" "9159655941772190")
