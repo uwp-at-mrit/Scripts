@@ -7,6 +7,7 @@
 (require "../../CH6000m3/SCADA/stone/tongue/alarm.resw.rkt")
 
 (require racket/tcp)
+(require racket/date)
 (require racket/generator)
 
 (require syntax/location)
@@ -23,11 +24,13 @@
                         (read-line /dev/plcin 'return-linefeed)
                         (port->plc (let ([plc (read-bytes (add1 (- addrn addr0)) /dev/plcin)])
                                      (read-line /dev/plcin 'return-linefeed)
-                                     (cons plc sclp))))]))))))
+                                     (cons (cons (seconds->date (* timepoint 0.001) #true) plc) sclp))))]))))))
 
 (define memory (make-bytes #x1264))
 (define master-ipv4 (with-handlers ([exn? (λ [_] #false)]) (vector-ref (current-command-line-arguments) 0)))
 (define master-port 2008)
+
+(date-display-format 'iso-8601)
 
 (define db4 4122)
 (define db205 4322)
@@ -56,8 +59,9 @@
   (let ([plc (sequence->repeated-generator ch6000m3.plc)])
   (lambda [alarms4 alarms205]
     (cond [(null? ch6000m3.plc) (bytes-fill! memory 0)]
-          [else (displayln "use history snapshot")
-                (bytes-copy! memory 0 (plc) 0 (bytes-length memory))])
+          [else (let ([date.plc (plc)])
+                  (displayln (date->string (car date.plc) #true))
+                  (bytes-copy! memory 0 (cdr date.plc) 0 (bytes-length memory)))])
 
     ;;; DB2
     (when (null? ch6000m3.plc)
