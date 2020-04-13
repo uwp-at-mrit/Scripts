@@ -3,17 +3,20 @@
 (provide gps-server)
 
 (require racket/tcp)
+(require racket/date)
 
-(define nmeas (file->lines (path-replace-extension (build-path (find-system-path 'orig-dir) (find-system-path 'run-file)) #".txt")))
+(date-display-format 'iso-8601)
 
-(define (gps-server)
-  (with-handlers ([exn:fail? (λ [e] (fprintf (current-error-port) "~a~n" (exn-message e)))])
+(define nmeas (file->lines (path-replace-extension (build-path (find-system-path 'orig-dir) (find-system-path 'run-file)) #".gps")))
+
+(define (gps-server [interval 0.1] [gps-port 4006])
+  (with-handlers ([exn:fail? (λ [e] (fprintf (current-error-port) "GPS: ~a~n" (exn-message e)))])
     (parameterize ([current-custodian (make-custodian)])
       (dynamic-wind
        (thunk (void))
-       (thunk (let ([listener (tcp-listen 4006 256 #true)])
+       (thunk (let ([listener (tcp-listen gps-port 256 #true)])
                 (define-values (hostname port _r _p) (tcp-addresses listener #true))
-                (printf "> GPS:~a:~a~n" hostname port)
+                (printf "> GPS:~a:~a [~a]~n" hostname port (date->string (current-date) #true))
                 (define-values (/dev/tcpin /dev/tcpout) (tcp-accept/enable-break listener))
 
                 (define-values (local lport remote rport) (tcp-addresses /dev/tcpout #true))
@@ -26,7 +29,7 @@
                     (write-char #\return /dev/tcpout)
                     (write-char #\linefeed /dev/tcpout)
                     (flush-output /dev/tcpout)
-                    (sleep 0.1))
+                    (sleep interval))
                   (loop))))
        (thunk (custodian-shutdown-all (current-custodian))))))
   (sleep 1)

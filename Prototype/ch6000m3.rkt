@@ -125,9 +125,9 @@
     [else (void)])
   (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport))
 
-(define (plc-slaver)
+(define (plc-slaver [interval 0.2])
   (let connect-send-wait-loop ()
-    (with-handlers ([exn:fail? (λ [e] (fprintf (current-error-port) "~a~n" (exn-message e)))])
+    (with-handlers ([exn:fail? (λ [e] (fprintf (current-error-port) "PLC: ~a~n" (exn-message e)))])
       (parameterize ([current-custodian (make-custodian)])
         (dynamic-wind
          (thunk (void))
@@ -138,7 +138,7 @@
                       (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport))
                     (let ([listener (tcp-listen master-port)])
                       (define-values (hostname port _r _p) (tcp-addresses listener #true))
-                      (printf "> PLC:~a:~a~n" hostname port)
+                      (printf "> PLC:~a:~a [~a]~n" hostname port (date->string (current-date) #true))
                       
                       (let-values ([(/dev/tcpin /dev/tcpout) (tcp-accept/enable-break listener)])
                         (define-values (local lport remote rport) (tcp-addresses /dev/tcpout #true))
@@ -146,7 +146,7 @@
                         (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport)))))
          (thunk (custodian-shutdown-all (current-custodian))))))
     
-    (sleep 1)
+    (sleep interval)
     (connect-send-wait-loop)))
 
 (module+ main
