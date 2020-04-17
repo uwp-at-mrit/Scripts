@@ -27,7 +27,6 @@
                                      (cons (cons (seconds->date (* timepoint 0.001) #true) plc) sclp))))]))))))
 
 (define memory (make-bytes #x1264))
-(define master-ipv4 (with-handlers ([exn? (λ [_] #false)]) (vector-ref (current-command-line-arguments) 0)))
 (define master-port 2008)
 
 (date-display-format 'iso-8601)
@@ -126,6 +125,7 @@
   (wait-read-response-loop /dev/tcpin /dev/tcpout remote rport))
 
 (define (plc-slaver [interval 0.2])
+  (define master-ipv4 (with-handlers ([exn? (λ [_] #false)]) (vector-ref (current-command-line-arguments) 0)))
   (let connect-send-wait-loop ()
     (with-handlers ([exn:fail? (λ [e] (fprintf (current-error-port) "PLC: ~a~n" (exn-message e)))])
       (parameterize ([current-custodian (make-custodian)])
